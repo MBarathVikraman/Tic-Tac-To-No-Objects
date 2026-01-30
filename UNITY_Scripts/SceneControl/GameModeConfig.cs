@@ -5,9 +5,9 @@ public enum GameMode
     Bot,
     Online
 }
-
 public static class GameModeConfig
 {
     public static GameMode Mode = GameMode.Local;
+    public static int boardSize=3;
 }
 

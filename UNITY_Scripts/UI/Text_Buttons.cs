@@ -38,7 +38,7 @@ public class Text_Buttons : MonoBehaviour
 
         board = null;
     }
-    private void HandleGameFinished(int value, bool isWin)
+    private void HandleGameFinished(int value, bool isWin, int[] cells)
     {
         if (isWin)
         {

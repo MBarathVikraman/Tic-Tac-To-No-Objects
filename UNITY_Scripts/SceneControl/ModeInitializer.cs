@@ -15,13 +15,16 @@ public class ModeInitializer : MonoBehaviour
         switch (GameModeConfig.Mode)
         {
             case GameMode.Local:
+                GameModeConfig.boardSize=3;
                 break;
 
             case GameMode.Bot:
+                GameModeConfig.boardSize=3;
                 botRoot.SetActive(true);
                 break;
 
             case GameMode.Online:
+                GameModeConfig.boardSize=3;
                 onlineNetwork.SetActive(true);
                 onlineManager.SetActive(true);
                 break;

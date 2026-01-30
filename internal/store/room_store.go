@@ -10,12 +10,20 @@ type RoomStore struct {
 	mu           sync.Mutex
 	rooms        map[string]*room.Room
 	waitingRooms []string
+	boardSize    int
 }
 
 func NewRoomStore() *RoomStore {
 	return &RoomStore{
 		rooms: make(map[string]*room.Room),
 	}
+}
+func (s *RoomStore) SetBoardSize(size int) {
+	s.boardSize = size
+}
+
+func (s *RoomStore) GetBoardSize() int {
+	return s.boardSize
 }
 
 func (s *RoomStore) AddRoom(r *room.Room) {

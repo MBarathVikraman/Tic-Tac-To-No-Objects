@@ -7,7 +7,6 @@ public class Cell : MonoBehaviour
     [SerializeField] private Button button;
     [SerializeField] private Image image;
     [SerializeField] private MultiplayerManager mp;
-    [SerializeField] private InputDisabler inputCtrl;
 
     [SerializeField] private Color defaultColor;
     [SerializeField] private Color winColor;
@@ -18,7 +17,6 @@ public class Cell : MonoBehaviour
     [SerializeField] private Sprite blankImage;
 
     private GameManager board;
-
     private void Awake()
     {
         if (button == null) button = GetComponent<Button>();
@@ -27,6 +25,8 @@ public class Cell : MonoBehaviour
         if(xImage==null) xImage = Resources.Load<Sprite>("x");
         if(oImage==null) oImage = Resources.Load<Sprite>("o");
         if(blankImage==null) blankImage = Resources.Load<Sprite>("b");
+
+        if (mp == null) mp = FindFirstObjectByType<MultiplayerManager>();
     }
 
     private void OnEnable()
@@ -74,13 +74,27 @@ public class Cell : MonoBehaviour
         }
 
         image.sprite = (newValue == 1) ? xImage : oImage;
-        image.color = Color.white;
+        image.color = defaultColor;
     }
 
-    private void OnGameFinished(int winnerValue, bool isWin)
+    private void OnGameFinished(int winnerValue, bool isWin, int[] winLine)
     {
-        image.color = isWin ? winColor : failedColor;
+        if (!isWin || winLine == null)
+        {
+            image.color = failedColor;
+            return;
+        }
+        foreach (int i in winLine)
+        {
+            if (i == cellIndex)
+            {
+                image.color = winColor;
+                return;
+            }
+        }
+        image.color = failedColor;
     }
+
 
     public void SetInteractable(bool enabled)
     {
@@ -92,14 +106,6 @@ public class Cell : MonoBehaviour
         if (board == null) return;
         if (GameModeConfig.Mode == GameMode.Online)
         {
-            if (mp == null) 
-                mp = FindFirstObjectByType<MultiplayerManager>();
-
-            if (inputCtrl == null) 
-                inputCtrl = FindFirstObjectByType<InputDisabler>();
-            
-            if (!inputCtrl.InputEnabled) return;
-
             mp.SendMove(cellIndex);
             return;
         }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 
 	"tictactoe/internal/protocol"
@@ -13,6 +14,7 @@ import (
 
 type MatchmakingService struct {
 	store *store.RoomStore
+	mu    sync.Mutex
 }
 
 func NewMatchmakingService(store *store.RoomStore) *MatchmakingService {
@@ -27,54 +29,106 @@ func newRoomID() string {
 	)
 }
 
-func (s *MatchmakingService) FindMatch(client room.ClientPort, setRoom func(*room.Room), setPlayer func(int)) {
+func (s *MatchmakingService) FindMatch(
+	client room.ClientPort,
+	setRoom func(*room.Room),
+	setPlayer func(int),
+	boardSize int,
+) {
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// First player sets board size
+	if s.store.GetBoardSize() == 0 {
+		s.store.SetBoardSize(boardSize)
+	}
+
+	size := s.store.GetBoardSize()
+
 	waiting := s.store.PopWaitingRoom()
-	if waiting != nil {
+
+	// ---------------- JOIN ROOM ----------------
+	if waiting != nil && waiting.CanJoin() {
+
 		waiting.Join(client)
+
 		setRoom(waiting)
 		setPlayer(2)
-		waiting.P1.Send(protocol.Msg{Type: protocol.MsgMatchFound, MatchID: waiting.ID, YouAre: 1})
-		waiting.P2.Send(protocol.Msg{Type: protocol.MsgMatchFound, MatchID: waiting.ID, YouAre: 2})
+
+		// Notify players
+		for i, p := range waiting.Players {
+
+			p.Send(protocol.Msg{
+				Type:      protocol.MsgMatchFound,
+				MatchID:   waiting.ID,
+				YouAre:    i + 1,
+				BoardSize: size,
+			})
+		}
+
 		log.Println("Room started:", waiting.ID)
 		return
 	}
 
+	// ---------------- CREATE ROOM ----------------
+
 	roomID := newRoomID()
-	newRoom := room.NewRoom(roomID, client)
+
+	newRoom := room.NewRoom(roomID, client, size)
+
 	setRoom(newRoom)
 	setPlayer(1)
+
 	s.store.AddRoom(newRoom)
-	client.Send(protocol.Msg{Type: protocol.MsgWaiting, MatchID: roomID, YouAre: 1})
+
+	client.Send(protocol.Msg{
+		Type:      protocol.MsgWaiting,
+		MatchID:   roomID,
+		YouAre:    1,
+		BoardSize: size,
+	})
+
 	log.Println("Created waiting room:", roomID)
 }
 
-func (s *MatchmakingService) HandleDisconnect(client room.ClientPort, r *room.Room) {
+func (s *MatchmakingService) HandleDisconnect(
+	client room.ClientPort,
+	r *room.Room,
+) {
+
 	if r == nil {
 		return
 	}
 
-	if r.P1 == client && r.P2 == nil {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Remove from room
+	r.RemovePlayer(client)
+
+	client.ClearRoom()
+
+	// No players left → delete room
+	if r.PlayerCount() == 0 {
+
 		s.store.RemoveRoom(r.ID)
-		client.ClearRoom()
-		log.Println("Waiting player disconnected, removed room:", r.ID)
+
+		log.Println("Room removed:", r.ID)
 		return
 	}
 
-	var opp room.ClientPort
-	if r.P1 == client {
-		opp = r.P2
-		r.P1 = nil
-	} else if r.P2 == client {
-		opp = r.P1
-		r.P2 = nil
-	}
+	// Notify remaining players
+	for _, p := range r.Players {
 
-	if opp != nil {
-		opp.Send(protocol.Msg{Type: protocol.MsgOpponentLeft})
-		opp.ClearRoom()
+		p.Send(protocol.Msg{
+			Type: protocol.MsgOpponentLeft,
+		})
+
+		p.ClearRoom()
 	}
 
 	s.store.RemoveRoom(r.ID)
-	client.ClearRoom()
-	log.Println("Active match ended due to disconnect, removed room:", r.ID)
+
+	log.Println("Match ended due to disconnect:", r.ID)
 }

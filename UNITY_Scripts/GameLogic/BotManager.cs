@@ -42,7 +42,7 @@ public class BotManager : MonoBehaviour
         StopAllCoroutines();
     }
 
-    private void OnGameFinished(int winner, bool isWin)
+    private void OnGameFinished(int winner, bool isWin, int[] winline)
     {
         gameOver = true;
         StopAllCoroutines();
@@ -80,10 +80,10 @@ public class BotManager : MonoBehaviour
 
     private int ChooseMove()
     {
-        int[] b = board.GetBoardCopy();   // b.Length == 9
+        int[] b = board.GetBoardCopy();
 
         List<int> empty = new();
-        for (int i = 0; i < 9; i++)
+        for (int i = 0; i < b.Length; i++)
             if (b[i] == 0)
                 empty.Add(i);
 

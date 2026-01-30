@@ -55,11 +55,18 @@ public class MultiplayerManager : MonoBehaviour
 
     public async System.Threading.Tasks.Task SendFindMatch()
     {
-        if (net == null) return;
+        int size = GameModeConfig.boardSize;
 
-        await net.Send($"{{\"type\":\"{WsMessageTypes.FindMatch}\"}}");
-        Debug.Log("Sent find_match");
+        string json = JsonUtility.ToJson(new WsMsg {
+            type = WsMessageTypes.FindMatch,
+            boardSize = size
+        });
+
+        await net.Send(json);
+
+        Debug.Log("Sent find_match with size " + size);
     }
+
 
     public async void SendMove(int cellId)
     {
@@ -92,6 +99,8 @@ public class MultiplayerManager : MonoBehaviour
                 InMatch = true;
                 MyValue = msg.youAre;
                 CurrentTurnValue = 1;
+                if (msg.boardSize > 0)
+                GameModeConfig.boardSize = msg.boardSize;
                 board.ResetGame();
                 board.isMyTurn = IsMyTurn;
                 UI.HandleHeaderChange(-1, -1);
@@ -107,6 +116,7 @@ public class MultiplayerManager : MonoBehaviour
 
             case WsMessageTypes.GameOver:
                 input?.SetInputEnabled(false);
+                InMatch = false;
                 break;
 
             case WsMessageTypes.OpponentLeft:
@@ -155,6 +165,7 @@ public class MultiplayerManager : MonoBehaviour
         public int youAre;
         public int winner;
         public string message;
+        public int boardSize;
     }
     private static class WsMessageTypes
     {

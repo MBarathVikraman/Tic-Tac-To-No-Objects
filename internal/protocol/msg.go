@@ -1,14 +1,15 @@
 package protocol
 
 type Msg struct {
-	Type     string `json:"type"`
-	Cell     int    `json:"cell,omitempty"`
-	Value    int    `json:"value,omitempty"`
-	NextTurn int    `json:"nextTurn,omitempty"`
-	MatchID  string `json:"matchId,omitempty"`
-	YouAre   int    `json:"youAre,omitempty"`
-	Message  string `json:"message,omitempty"`
-	Winner   int    `json:"winner,omitempty"`
+	Type      string `json:"type"`
+	Cell      int    `json:"cell,omitempty"`
+	Value     int    `json:"value,omitempty"`
+	NextTurn  int    `json:"nextTurn,omitempty"`
+	MatchID   string `json:"matchId,omitempty"`
+	YouAre    int    `json:"youAre,omitempty"`
+	Message   string `json:"message,omitempty"`
+	Winner    int    `json:"winner,omitempty"`
+	BoardSize int    `json:"boardSize,omitempty"`
 }
 
 const (

@@ -41,6 +41,9 @@ func (c *Client) Send(m protocol.Msg) {
 	default:
 	}
 }
+func (c *Client) SendRaw(b []byte) {
+	c.send <- b
+}
 
 func (c *Client) SendError(text string) {
 	c.Send(protocol.Msg{Type: protocol.MsgError, Message: text})
@@ -86,6 +89,7 @@ func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				client,
 				func(r *room.Room) { client.room = r },
 				func(p int) { client.player = p },
+				m.BoardSize,
 			)
 
 		case protocol.MsgMove:
